@@ -1,48 +1,80 @@
 <!DOCTYPE html>
-<html th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>Dashboard - Apex Trading</title>
-    <meta http-equiv="refresh" content="60">
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-<main>
-    <h1 class="text-4xl font-bold mb-8 text-emerald-400">Dashboard</h1>
+<body class="bg-slate-950 text-slate-100 font-mono min-h-screen">
+
+<nav class="bg-slate-900 border-b border-slate-700 px-6 py-4">
+    <div class="max-w-7xl mx-auto flex justify-between items-center">
+        <a href="/dashboard" class="text-2xl font-bold text-emerald-400">APEX</a>
+        <div>
+            <span th:if="${user}" class="mr-6">Balance: $<span th:text="${#numbers.formatDecimal(balance, 1, 2)}"></span></span>
+            <a href="/logout" class="text-rose-400 hover:text-rose-300">Logout</a>
+        </div>
+    </div>
+</nav>
+
+<main class="max-w-7xl mx-auto px-6 py-8">
+    <div class="flex justify-between items-center mb-8">
+        <h1 class="text-4xl font-bold text-emerald-400">Dashboard</h1>
+
+        <!-- Refresh Button -->
+        <form method="post" action="/refresh-prices">
+            <button type="submit"
+                    class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-lg font-bold transition flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                Refresh Prices
+            </button>
+        </form>
+    </div>
+
+    <!-- Data Source Badge -->
+    <div th:if="${isSeedData}" class="bg-amber-900/40 border border-amber-700 text-amber-300 px-4 py-2 rounded-lg text-sm mb-6">
+        ⚠️ Using Demo Data
+    </div>
+    <div th:unless="${isSeedData}" class="bg-emerald-900/40 border border-emerald-700 text-emerald-300 px-4 py-2 rounded-lg text-sm mb-6">
+        ✅ Live Market Data
+    </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
         <div class="bg-slate-900 border border-slate-700 rounded-xl p-6">
             <div class="text-sm text-slate-400 mb-1">Account Balance</div>
-            <div class="text-3xl font-bold">$<span th:text="${balance}"></span></div>
+            <div class="text-3xl font-bold">$<span th:text="${#numbers.formatDecimal(balance, 1, 2)}"></span></div>
         </div>
         <div class="bg-slate-900 border border-slate-700 rounded-xl p-6">
             <div class="text-sm text-slate-400 mb-1">Portfolio Value</div>
-            <div class="text-3xl font-bold">$<span th:text="${portfolioValue}"></span></div>
+            <div class="text-3xl font-bold">$<span th:text="${#numbers.formatDecimal(portfolioValue, 1, 2)}"></span></div>
         </div>
         <div class="bg-slate-900 border border-slate-700 rounded-xl p-6">
             <div class="text-sm text-slate-400 mb-1">P&L / ROI</div>
-            <div th:classappend="${#numbers.doubleGe(#numbers.double(pnl), 0)} ? 'text-emerald-400' : 'text-rose-500'"
-                 class="text-3xl font-bold">
-                $<span th:text="${pnl}"></span>
-                <span class="text-xl">(<span th:text="${roi}"></span>%)</span>
+            <div class="text-3xl font-bold" th:classappend="${pnl >= 0} ? 'text-emerald-400' : 'text-rose-500'">
+                $<span th:text="${#numbers.formatDecimal(pnl, 1, 2)}"></span>
+                <span class="text-xl">(<span th:text="${#numbers.formatDecimal(roi, 1, 2)}"></span>%)</span>
             </div>
         </div>
     </div>
 
     <h2 class="text-2xl font-bold mb-4">Watchlist</h2>
-    <div class="overflow-x-auto">
+    <div class="overflow-x-auto bg-slate-900 border border-slate-700 rounded-xl">
         <table class="w-full text-left border-collapse">
             <thead>
             <tr class="border-b border-slate-700">
-                <th class="py-3 px-4">Ticker</th>
-                <th class="py-3 px-4">Company</th>
-                <th class="py-3 px-4 text-right">Price</th>
-                <th class="py-3 px-4 text-center">Action</th>
+                <th class="py-3 px-4 text-slate-400">Ticker</th>
+                <th class="py-3 px-4 text-slate-400">Company</th>
+                <th class="py-3 px-4 text-right text-slate-400">Price</th>
+                <th class="py-3 px-4 text-center text-slate-400">Action</th>
             </tr>
             </thead>
             <tbody>
             <tr th:each="sec : ${securities}" class="border-b border-slate-800 hover:bg-slate-800/50">
-                <td class="py-4 px-4 font-bold" th:text="${sec.ticker}"></td>
-                <td class="py-4 px-4" th:text="${sec.companyName}"></td>
-                <td class="py-4 px-4 text-right font-bold" th:text="${#numbers.formatDecimal(sec.currentPrice, 0, 2, 'COMMA')}"></td>
+                <td class="py-4 px-4 font-bold" th:text="${sec.ticker}"> </td>
+                <td class="py-4 px-4 text-slate-300" th:text="${sec.companyName}"> </td>
+                <td class="py-4 px-4 text-right font-bold" th:text="${#numbers.formatDecimal(sec.currentPrice, 1, 2)}"> </td>
                 <td class="py-4 px-4 text-center">
                     <a th:href="@{/trade/{ticker}(ticker=${sec.ticker})}"
                        class="bg-emerald-600 hover:bg-emerald-500 px-4 py-1 rounded text-sm font-bold">
@@ -55,27 +87,28 @@
     </div>
 
     <h2 class="text-2xl font-bold mt-12 mb-4">Recent Transactions</h2>
-    <div th:if="${transactions.isEmpty()}" class="text-slate-400">No trades yet.</div>
-    <div th:unless="${transactions.isEmpty()}" class="overflow-x-auto">
+    <div th:if="${transactions.isEmpty()}" class="text-slate-400 bg-slate-900 border border-slate-700 rounded-xl p-8 text-center">No trades yet.</div>
+    <div th:unless="${transactions.isEmpty()}" class="overflow-x-auto bg-slate-900 border border-slate-700 rounded-xl">
         <table class="w-full text-left border-collapse">
             <thead>
             <tr class="border-b border-slate-700">
-                <th class="py-3 px-4">Ticker</th>
-                <th class="py-3 px-4">Qty</th>
-                <th class="py-3 px-4">Price</th>
-                <th class="py-3 px-4">Time</th>
+                <th class="py-3 px-4 text-slate-400">Ticker</th>
+                <th class="py-3 px-4 text-slate-400">Qty</th>
+                <th class="py-3 px-4 text-slate-400 text-right">Price</th>
+                <th class="py-3 px-4 text-slate-400 text-right">Time</th>
             </tr>
             </thead>
             <tbody>
             <tr th:each="tx : ${transactions}" class="border-b border-slate-800">
-                <td class="py-3 px-4 font-bold" th:text="${tx.ticker}"></td>
-                <td class="py-3 px-4" th:text="${tx.quantity}"></td>
-                <td class="py-3 px-4" th:text="${#numbers.formatDecimal(tx.price, 0, 2, 'COMMA')}"></td>
-                <td class="py-3 px-4 text-slate-400" th:text="${#temporals.format(tx.createdAt, 'yyyy-MM-dd HH:mm')}"></td>
+                <td class="py-3 px-4 font-bold text-emerald-400" th:text="${tx.ticker}"> </td>
+                <td class="py-3 px-4" th:text="${tx.quantity}"> </td>
+                <td class="py-3 px-4 text-right" th:text="${#numbers.formatDecimal(tx.price, 1, 2)}"> </td>
+                <td class="py-3 px-4 text-slate-400 text-right text-sm" th:text="${#temporals.format(tx.createdAt, 'yyyy-MM-dd HH:mm')}"> </td>
             </tr>
             </tbody>
         </table>
     </div>
 </main>
+
 </body>
 </html>

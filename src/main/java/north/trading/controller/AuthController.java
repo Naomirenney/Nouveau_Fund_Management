@@ -1,11 +1,9 @@
 package north.trading.controller;
 
-
 import io.javalin.Javalin;
 import io.javalin.http.Context;
 import north.trading.model.User;
 import north.trading.repository.UserRepository;
-import org.mindrot.jbcrypt.BCrypt;
 
 public class AuthController {
 
@@ -13,12 +11,8 @@ public class AuthController {
 
     public AuthController(Javalin app, UserRepository userRepo) {
         this.userRepo = userRepo;
-        //when user goes to url... /login
         app.get("/login", this::showLogin);
-        //when user logins in via login html
         app.post("/login", this::handleLogin);
-        app.get("/register", this::showRegister);
-        app.post("/register", this::handleRegister);
         app.get("/logout", this::logout);
     }
 
@@ -28,54 +22,37 @@ public class AuthController {
 
     private void handleLogin(Context ctx) {
         String username = ctx.formParam("username");
-        String password = ctx.formParam("password");
 
-        if (username == null || password == null) {
-            ctx.attribute("error", "Missing credentials");
+        if (username == null || username.trim().isEmpty()) {
+            ctx.attribute("error", "Username is required");
             ctx.render("login.html");
             return;
         }
 
+        username = username.trim();
+
+        // Check if user exists
         var userOpt = userRepo.findByUsername(username);
-        if (userOpt.isEmpty() || !BCrypt.checkpw(password, userOpt.get().passwordHash())) {
-            ctx.attribute("error", "Invalid username or password");
-            ctx.render("login.html");
-            return;
+
+        if (userOpt.isPresent()) {
+            // Existing user - welcome back
+            User user = userOpt.get();
+            ctx.sessionAttribute("user", user);
+            ctx.attribute("message", "Welcome back, " + username + "!");
+            ctx.redirect("/dashboard");
+        } else {
+            // New user - create account
+            userRepo.createUser(username);
+            var newUser = userRepo.findByUsername(username);
+            if (newUser.isPresent()) {
+                ctx.sessionAttribute("user", newUser.get());
+                ctx.attribute("message", "Welcome new trader, " + username + "! You've been credited $100,000.");
+                ctx.redirect("/dashboard");
+            } else {
+                ctx.attribute("error", "Failed to create account");
+                ctx.render("login.html");
+            }
         }
-
-        ctx.sessionAttribute("user", userOpt.get());
-        ctx.redirect("/dashboard");
-    }
-
-    private void showRegister(Context ctx) {
-        ctx.render("register.html");
-    }
-
-    private void handleRegister(Context ctx) {
-        String username = ctx.formParam("username");
-        String password = ctx.formParam("password");
-        String password2 = ctx.formParam("password2");
-
-        if (username == null || password == null || password2 == null) {
-            ctx.attribute("error", "All fields are required");
-            ctx.render("register.html");
-            return;
-        }
-
-        if (!password.equals(password2)) {
-            ctx.attribute("error", "Passwords do not match");
-            ctx.render("register.html");
-            return;
-        }
-
-        if (userRepo.findByUsername(username).isPresent()) {
-            ctx.attribute("error", "Username already taken");
-            ctx.render("register.html");
-            return;
-        }
-
-        userRepo.createUser(username, password);
-        ctx.redirect("/login");
     }
 
     private void logout(Context ctx) {

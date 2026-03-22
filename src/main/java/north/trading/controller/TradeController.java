@@ -10,6 +10,8 @@ import north.trading.repository.SecurityRepository;
 import north.trading.repository.TransactionRepository;
 import north.trading.repository.UserRepository;
 import north.trading.service.MarketService;
+import north.trading.service.TwelveDataService;
+import north.trading.service.YahooFinanceService;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -19,12 +21,11 @@ public class TradeController {
     private final UserRepository userRepo;
     private final TransactionRepository txRepo;
     private final SecurityRepository securityRepo;
-    private final MarketService marketService;
-
+    private final TwelveDataService marketService;
     public TradeController(Javalin app, UserRepository userRepo,
                            TransactionRepository txRepo,
                            SecurityRepository securityRepo,
-                           MarketService marketService) {
+                           TwelveDataService marketService) {
         this.userRepo = userRepo;
         this.txRepo = txRepo;
         this.securityRepo = securityRepo;
@@ -54,10 +55,11 @@ public class TradeController {
         ctx.render("trade.html", model);
     }
 
+    // In TradeController, update the executeTrade method:
     private void executeTrade(Context ctx) {
         User user = ctx.sessionAttribute("user");
         String ticker = ctx.pathParam("ticker").toUpperCase();
-        String action = ctx.formParam("action");        // "buy" or "sell"
+        String action = ctx.formParam("action");
         String qtyStr = ctx.formParam("quantity");
 
         if (qtyStr == null || action == null) {
@@ -90,24 +92,31 @@ public class TradeController {
                 return;
             }
 
-            // Update balance
+            // Update balance in database
             userRepo.updateBalance(user.id(), user.balance() - cost);
+
+            // Update the user object in session with new balance
+            User updatedUser = userRepo.findByUsername(user.username()).get();
+            ctx.sessionAttribute("user", updatedUser);
 
             // Record transaction
             txRepo.create(new Transaction(null, user.id(), ticker, quantity, price, null));
 
             ctx.redirect("/dashboard?message=Bought+" + quantity + "+" + ticker);
-        }
-        else if ("sell".equalsIgnoreCase(action)) {
-            // Very basic — allow sell even without position (paper trading demo)
+        } else if ("sell".equalsIgnoreCase(action)) {
             double proceeds = quantity * price;
+
+            // Update balance in database
             userRepo.updateBalance(user.id(), user.balance() + proceeds);
+
+            // Update the user object in session with new balance
+            User updatedUser = userRepo.findByUsername(user.username()).get();
+            ctx.sessionAttribute("user", updatedUser);
 
             txRepo.create(new Transaction(null, user.id(), ticker, -quantity, price, null));
 
             ctx.redirect("/dashboard?message=Sold+" + quantity + "+" + ticker);
-        }
-        else {
+        } else {
             ctx.status(400).result("Invalid action");
         }
     }

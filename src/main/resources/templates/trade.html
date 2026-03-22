@@ -1,76 +1,115 @@
 <!DOCTYPE html>
-<html th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+<html lang="en">
 <head>
-    <title th:text="'Trade ' + ${ticker} + ' - Apex'">Trade</title>
+    <meta charset="UTF-8">
+    <title th:text="'Trade ' + ${security.ticker} + ' - Apex Trading'">Trade</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body>
-<main>
+<body class="bg-slate-950 text-slate-100 font-mono min-h-screen">
+
+<nav class="bg-slate-900 border-b border-slate-700 px-6 py-4">
+    <div class="max-w-7xl mx-auto flex justify-between items-center">
+        <a href="/dashboard" class="text-2xl font-bold text-emerald-400">APEX</a>
+        <div>
+            <span th:if="${user}" class="mr-6">Balance: $<span th:text="${user.balance}"></span></span>
+            <a href="/logout" class="text-rose-400 hover:text-rose-300">Logout</a>
+        </div>
+    </div>
+</nav>
+
+<main class="max-w-7xl mx-auto px-6 py-8">
+    <div class="mb-6">
+        <a href="/dashboard" class="text-slate-400 hover:text-slate-300">← Back to Dashboard</a>
+    </div>
+
     <div class="flex flex-col md:flex-row gap-8">
         <!-- Left: Chart & Info -->
         <div class="flex-1">
             <h1 class="text-3xl font-bold mb-2" th:text="${security.ticker}"></h1>
-            <p class="text-xl mb-6" th:text="${security.companyName}"></p>
+            <p class="text-xl mb-6 text-slate-400" th:text="${security.companyName}"></p>
 
             <div class="bg-slate-900 border border-slate-700 rounded-xl p-6 mb-8">
                 <div class="text-sm text-slate-400 mb-1">Current Price</div>
-                <div class="text-4xl font-bold text-emerald-400" th:text="${#numbers.formatDecimal(security.currentPrice, 0, 2, 'COMMA')}"></div>
-                <div class="text-sm text-slate-400 mt-1" th:text="${#temporals.format(security.lastUpdated, 'HH:mm:ss')}"></div>
+                <div class="text-4xl font-bold text-emerald-400">$<span th:text="${#numbers.formatDecimal(security.currentPrice, 1, 2)}"></span></div>
+                <div class="text-sm text-slate-500 mt-1">Last Updated: <span th:text="${#temporals.format(security.lastUpdated, 'HH:mm:ss')}"></span></div>
             </div>
 
-            <canvas id="priceChart" class="w-full h-80"></canvas>
+            <div class="bg-slate-900 border border-slate-700 rounded-xl p-6">
+                <canvas id="priceChart" class="w-full h-80"></canvas>
+            </div>
         </div>
 
         <!-- Right: Trade Form -->
         <div class="w-full md:w-96 bg-slate-900 border border-slate-700 rounded-xl p-8 self-start">
-            <h2 class="text-2xl font-bold mb-6">Place Order</h2>
+            <h2 class="text-2xl font-bold mb-6 text-emerald-400">Place Order</h2>
+
+            <div th:if="${error}" class="bg-rose-900/40 border border-rose-700 text-rose-300 px-4 py-3 rounded mb-6 text-sm">
+                <span th:text="${error}"></span>
+            </div>
+            <div th:if="${success}" class="bg-emerald-900/40 border border-emerald-700 text-emerald-300 px-4 py-3 rounded mb-6 text-sm">
+                <span th:text="${success}"></span>
+            </div>
 
             <form method="post" class="space-y-6">
                 <div>
-                    <label class="block text-sm mb-2">Quantity</label>
-                    <input type="number" name="quantity" min="1" required
-                           class="w-full bg-slate-800 border border-slate-600 rounded px-4 py-3 text-lg focus:outline-none focus:border-emerald-500">
+                    <label class="block text-sm text-slate-400 mb-2">Quantity</label>
+                    <input type="number" name="quantity" value="1" min="1" required
+                           class="w-full bg-slate-800 border border-slate-700 rounded px-4 py-3 text-lg focus:outline-none focus:border-emerald-500 text-white">
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
                     <button type="submit" name="action" value="buy"
-                            class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 px-6 rounded-xl text-lg transition">
+                            class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-xl text-lg transition shadow-lg shadow-emerald-900/20">
                         BUY
                     </button>
                     <button type="submit" name="action" value="sell"
-                            class="bg-rose-600 hover:bg-rose-500 text-white font-bold py-4 px-6 rounded-xl text-lg transition">
+                            class="bg-rose-600 hover:bg-rose-500 text-white font-bold py-4 rounded-xl text-lg transition shadow-lg shadow-rose-900/20">
                         SELL
                     </button>
                 </div>
             </form>
 
-            <p class="text-center text-slate-400 mt-6 text-sm">
-                Paper trading — virtual funds only
+            <p class="text-center text-slate-500 mt-8 text-xs italic">
+                Paper trading environment — no real money involved
             </p>
         </div>
     </div>
 
-    <script th:inline="none">
-        /* Very simple static chart — in production use real time series */
+    <script th:inline="javascript">
+        const ticker = /*[[${security.ticker}]]*/ 'Price';
+        const price = /*[[${security.currentPrice}]]*/ 0;
         const ctx = document.getElementById('priceChart').getContext('2d');
+        
         new Chart(ctx, {
             type: 'line',
             data: {
                 labels: ['9:30', '10:00', '10:30', '11:00', '11:30', '12:00', 'Now'],
                 datasets: [{
-                    label: /*[[${ticker}]]*/ 'Price',
-                    data: [/* random demo data */ 145, 148, 152, 149, 155, 158, /*[[${security.currentPrice}]]*/ 160],
+                    label: ticker,
+                    data: [price * 0.98, price * 1.01, price * 1.02, price * 0.99, price * 1.03, price * 1.01, price],
                     borderColor: '#10b981',
                     backgroundColor: 'rgba(16, 185, 129, 0.1)',
                     tension: 0.3,
-                    fill: true
+                    fill: true,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#10b981'
                 }]
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
                 scales: {
-                    y: { beginAtZero: false, grid: { color: '#334155' } },
-                    x: { grid: { color: '#334155' } }
+                    y: { 
+                        beginAtZero: false, 
+                        grid: { color: '#1e293b' },
+                        ticks: { color: '#64748b' }
+                    },
+                    x: { 
+                        grid: { color: '#1e293b' },
+                        ticks: { color: '#64748b' }
+                    }
                 }
             }
         });

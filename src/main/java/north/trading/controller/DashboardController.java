@@ -8,6 +8,10 @@ import north.trading.model.User;
 import north.trading.repository.SecurityRepository;
 import north.trading.repository.TransactionRepository;
 import north.trading.repository.UserRepository;
+import north.trading.service.MarketService;
+import north.trading.service.TwelveDataService;
+import north.trading.service.YahooFinanceService;
+
 
 import java.util.HashMap;
 import java.util.List;
@@ -16,29 +20,77 @@ public class DashboardController {
     private final UserRepository userRepo;
     private final SecurityRepository securityRepo;
     private final TransactionRepository txRepo;
-
+    private final TwelveDataService marketService;
     public DashboardController(Javalin app, UserRepository userRepo,
                                SecurityRepository securityRepo,
-                               TransactionRepository txRepo){
+                               TransactionRepository txRepo, TwelveDataService marketService){
         this.userRepo=userRepo;
         this.securityRepo=securityRepo;
         this.txRepo=txRepo;
+        this.marketService = marketService;
 
         app.get("/dashboard", this::showDashboard);
 
+        app.post("/refresh-prices", this::refreshPrices);
+
+        // Add test endpoint
+        app.get("/test-update", ctx -> {
+            User user = ctx.sessionAttribute("user");
+            if (user == null) {
+                ctx.redirect("/login");
+                return;
+            }
+            marketService.testUpdate();
+            ctx.redirect("/dashboard?message=Test+update+applied!");
+        });
     }
 
-    private void showDashboard(Context ctx){
-        User user= ctx.sessionAttribute("user");
-        if (user==null){
+    private void refreshPrices(Context ctx) {
+        System.out.println("🔵 Refresh button clicked!");  // Add this log
+        User user = ctx.sessionAttribute("user");
+        if (user == null) {
+            System.out.println("❌ No user in session, redirecting to login");
             ctx.redirect("/login");
             return;
         }
 
+        System.out.println("✅ User found: " + user.username());
+        System.out.println("🔄 Calling marketService.manualRefresh()...");
+
+        marketService.manualRefresh();
+
+        System.out.println("✅ Manual refresh complete, redirecting to dashboard");
+        ctx.redirect("/dashboard?message=Prices+refreshed!");
+    }
+
+    // In DashboardController, update the showDashboard method:
+    private void showDashboard(Context ctx){
+        User sessionUser = ctx.sessionAttribute("user");
+        if (sessionUser == null) {
+            ctx.redirect("/login");
+            return;
+        }
+
+        // Get fresh user data from database to ensure latest balance
+        User user = userRepo.findByUsername(sessionUser.username()).orElse(sessionUser);
+        // Update session with fresh data
+        ctx.sessionAttribute("user", user);
+
+
         List<Security> securities = securityRepo.findAllWatched();
         List<Transaction> transactions = txRepo.findByUserId(user.id());
 
-        // Very simple portfolio summary
+        // Check if prices are from API or seed data
+        boolean isSeedData = false;
+        if (!securities.isEmpty()) {
+            // Check if the first security's price is exactly the seed price
+            Security firstSec = securities.get(0);
+            // If the price is exactly the seed price and hasn't been updated by API
+            // You can add a flag or check the last_updated timestamp
+            isSeedData = firstSec.currentPrice() == 175.32 && firstSec.ticker().equals("AAPL");
+        }
+
+        // Calculate portfolio value correctly using current prices
         double totalCost = transactions.stream()
                 .mapToDouble(t -> t.quantity() * t.price())
                 .sum();
@@ -49,21 +101,27 @@ public class DashboardController {
                     return sec != null ? t.quantity() * sec.currentPrice() : 0;
                 })
                 .sum();
-        //calculate pnl and roi
+
         double pnl = currentValue - totalCost;
         double roi = totalCost > 0 ? (pnl / totalCost) * 100 : 0;
+
+        // Get current balance from database (it should update after trades)
+        double currentBalance = user.balance();
 
         Map<String, Object> model = new HashMap<>();
         model.put("user", user);
         model.put("securities", securities);
         model.put("transactions", transactions.subList(0, Math.min(10, transactions.size())));
-        model.put("balance", String.format("%.2f", user.balance()));
-        model.put("portfolioValue", String.format("%.2f", currentValue));
-        model.put("pnl", String.format("%.2f", pnl));
-        model.put("roi", String.format("%.2f", roi));
-        //put into html
+        model.put("balance", currentBalance);  // Current balance from DB
+        model.put("portfolioValue", currentValue);
+        model.put("pnl", pnl);
+        model.put("roi", roi);
+        model.put("isSeedData", isSeedData);  // Flag for data source
+
         ctx.render("dashboard.html", model);
     }
+
+
 
 
 

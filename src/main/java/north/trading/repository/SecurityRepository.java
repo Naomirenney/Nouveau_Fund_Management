@@ -1,7 +1,5 @@
 package north.trading.repository;
 
-
-
 import org.jdbi.v3.core.Jdbi;
 import north.trading.model.Security;
 
@@ -23,7 +21,10 @@ public class SecurityRepository {
                     KEY(ticker)
                     VALUES (:ticker, :companyName, :currentPrice, :lastUpdated)
                 """)
-                        .bindBean(security)
+                        .bind("ticker", security.ticker())
+                        .bind("companyName", security.companyName())
+                        .bind("currentPrice", security.currentPrice())
+                        .bind("lastUpdated", security.lastUpdated())
                         .execute()
         );
     }
@@ -32,7 +33,12 @@ public class SecurityRepository {
         return jdbi.withHandle(handle ->
                 handle.createQuery("SELECT * FROM securities WHERE ticker = :ticker")
                         .bind("ticker", ticker)
-                        .mapToBean(Security.class)
+                        .map((rs, ctx) -> new Security(
+                                rs.getString("ticker"),
+                                rs.getString("company_name"),
+                                rs.getDouble("current_price"),
+                                rs.getTimestamp("last_updated") != null ? rs.getTimestamp("last_updated").toLocalDateTime() : null
+                        ))
                         .findOne()
         );
     }
@@ -40,7 +46,12 @@ public class SecurityRepository {
     public List<Security> findAllWatched() {
         return jdbi.withHandle(handle ->
                 handle.createQuery("SELECT * FROM securities ORDER BY ticker")
-                        .mapToBean(Security.class)
+                        .map((rs, ctx) -> new Security(
+                                rs.getString("ticker"),
+                                rs.getString("company_name"),
+                                rs.getDouble("current_price"),
+                                rs.getTimestamp("last_updated") != null ? rs.getTimestamp("last_updated").toLocalDateTime() : null
+                        ))
                         .list()
         );
     }

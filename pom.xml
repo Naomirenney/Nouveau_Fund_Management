@@ -19,14 +19,26 @@
         <dependency>
             <groupId>io.javalin</groupId>
             <artifactId>javalin</artifactId>
-            <version>6.3.0</version>
+            <version>6.1.1</version>
         </dependency>
 
-        <!-- Thymeleaf for Javalin -->
+        <!-- Rendering Plugin -->
         <dependency>
             <groupId>io.javalin</groupId>
-            <artifactId>javalin-rendering-thymeleaf</artifactId>
-            <version>7.0.1</version>
+            <artifactId>javalin-rendering</artifactId>
+            <version>6.1.1</version>
+        </dependency>
+
+        <!-- Thymeleaf Engine -->
+        <dependency>
+            <groupId>org.thymeleaf</groupId>
+            <artifactId>thymeleaf</artifactId>
+            <version>3.1.2.RELEASE</version>
+        </dependency>
+        <dependency>
+            <groupId>org.thymeleaf.extras</groupId>
+            <artifactId>thymeleaf-extras-java8time</artifactId>
+            <version>3.0.4.RELEASE</version>
         </dependency>
 
         <!-- JDBI3 -->
@@ -62,11 +74,21 @@
             <artifactId>jackson-databind</artifactId>
             <version>2.17.2</version>
         </dependency>
+        <dependency>
+            <groupId>com.yahoofinance-api</groupId>
+            <artifactId>YahooFinanceAPI</artifactId>
+            <version>3.17.0</version>
+        </dependency>
 
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
             <version>2.0.16</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>33.5.0-jre</version>
         </dependency>
     </dependencies>
 
