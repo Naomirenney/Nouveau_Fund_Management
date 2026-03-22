@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en" class="bg-slate-950 text-slate-100 font-mono" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title ?: 'Apex Trading'}">Apex Trading</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap">
+    <style>
+        body { font-family: 'JetBrains Mono', monospace; }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100">
+
+<nav class="bg-slate-900 border-b border-slate-700 px-6 py-4">
+    <div class="max-w-7xl mx-auto flex justify-between items-center">
+        <a href="/dashboard" class="text-2xl font-bold text-emerald-400">APEX</a>
+        <div>
+            <span th:if="${user}" class="mr-6">Balance: $<span th:text="${user.balance}"></span></span>
+            <a th:if="${user}" href="/logout" class="text-rose-400 hover:text-rose-300">Logout</a>
+            <a th:unless="${user}" href="/login" class="text-emerald-400 hover:text-emerald-300">Login</a>
+        </div>
+    </div>
+</nav>
+
+<main class="max-w-7xl mx-auto px-6 py-8">
+    <div th:replace="${content}"></div>
+</main>
+
+</body>
+</html>
