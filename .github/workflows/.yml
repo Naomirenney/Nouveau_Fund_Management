@@ -1,0 +1,20 @@
+name: Run My App  # Name of your workflow
+
+on:
+  push:
+    branches: [ "main" ]  # Triggers when you push to the main branch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4  # Downloads your code to the runner
+
+      - name: Run script with API Key
+        # This is where the "encryption" works: GitHub injects the secret
+        env:
+          MY_API_KEY: ${{ secrets.TWELVEDATA }}  # Reference the name you used in Settings
+        run: |
+          python my_script.py  # Your script can now access 'MY_API_KEY' as an env variable
