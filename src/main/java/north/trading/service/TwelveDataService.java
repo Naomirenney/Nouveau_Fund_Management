@@ -60,6 +60,8 @@ public class TwelveDataService {
             System.out.println("⚠️ Daily API limit reached. Try again tomorrow.");
             return;
         }
+        repo.clearAll();
+
 
         System.out.println("\n🔄 Starting fast price update cycle...");
 

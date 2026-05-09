@@ -55,4 +55,9 @@ public class SecurityRepository {
                         .list()
         );
     }
+    public void clearAll() {
+        jdbi.withHandle(handle ->
+                handle.execute("DELETE FROM securities")
+        );
+    }
 }

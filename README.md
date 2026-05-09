@@ -32,9 +32,11 @@ Repo for securities portfolio manager
 
 >```mvn clean compile exec:java```
 > 
->open http://localhost:8080
+>open http://localhost:7070/login
 > 
-> register a new username and password
+> ```curl http://localhost:7070/login```
+> 
+> Register a new username
 > 
 > Or 
 > 

@@ -31,6 +31,9 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
+*.mv.db
+*.db
+
 ### VS Code ###
 .vscode/
 

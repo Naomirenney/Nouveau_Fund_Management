@@ -28,9 +28,13 @@ public class NouveauApp {
         TransactionRepository transactionRepo = new TransactionRepository(jdbi);
 
         // Get Twelve Data API key from .env file
-        String twelveDataKey = getApiKeyFromEnv();
+        String apiKey = System.getenv("TWELVEDATA");
 
-        TwelveDataService marketService = new TwelveDataService(twelveDataKey, securityRepo);
+        if (apiKey == null) {
+            throw new IllegalStateException("API key is not set!");
+        }
+
+        TwelveDataService marketService = new TwelveDataService(apiKey, securityRepo);
         marketService.startPolling();
 
         // Javalin App
